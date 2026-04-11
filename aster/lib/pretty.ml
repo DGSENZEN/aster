@@ -11,5 +11,9 @@ let rec pp_expr ppf = function
   | Mul (l, r) ->
     fprintf ppf "@[<hv 2>(%a@ * %a)@]" pp_expr l pp_expr r
   | Div (l, r) ->
-    fprintf ppf "@[<hv 2>(%a@ / %a)@]" pp_expr l pp_expr r 
+    fprintf ppf "@[<hv 2>(%a@ / %a)@]" pp_expr l pp_expr r
+  | Let (var, bind, body) ->
+    fprintf ppf "@[<hv 2>let %s = %a in@ %a@]" var pp_expr bind pp_expr body
   
+let expr_to_string e =
+    asprintf "%a" pp_expr e 
