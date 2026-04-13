@@ -1,6 +1,9 @@
 open Ast
 
-type env = (string * int) list
+type value = 
+    | VInt of int
 
-val lookup : string -> env -> int
-val eval: env -> Ast.expr -> int 
+type env = (string * value) list
+
+val lookup : string -> env -> value
+val eval: env -> expr -> value 
