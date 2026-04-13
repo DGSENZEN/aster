@@ -1,4 +1,5 @@
 open Format
 open Ast
 
-val pp_expr : Format.formatter -> expr -> unit
+val pp_expr : formatter -> expr -> unit
+val pp_value : formatter -> value -> unit
