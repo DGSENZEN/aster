@@ -3,33 +3,38 @@ open Aster.Eval
 open Aster.Ast
 open Format
 
-(* 
-let test = 
-    Let ( "sum", Var("sum_n"), Add (Int 5, Int 12))
+let new_eval_test = Binop(Int 6, Add, Int 7)
+let () = printf "%a@." pp_expr new_eval_test
+let new_eval_value_test = eval [] new_eval_test
+let () = printf "%a@." pp_value new_eval_value_test
 
-let test_let = Let ("x", Int 16, Add (Int 22, Int 16))
-let test_let_two = Let ("x", Add (Var "x", Int 1), Var "x")
-let test_add = Let ("Operator1", Int 16, Add(Int 21, Int 25))
-let test_if = If (Bool(true), Let("x", Int 3, Add(Var "x", Int 2)), Bool(false))
 
-let test_if_two = If(Bool(false), Div(Int 1, Int 0), Int 42)
+let float_eval_test = Binop(Float 6.0, Add, Float 7.1)
+let () = printf "%a@." pp_expr float_eval_test
+let float_eval_val_test = eval [] float_eval_test
+let () = printf "%a@." pp_value float_eval_val_test
 
-let eval_test_add = eval [] test_add
-let eval_test_if = eval [] test_if
+(* function testing 
+(fun x -> x + 1) 5 *)
 
-let eval_test_if_two = eval [] test_if_two
-let eval_test_let = eval [] test_let
+let func_test = Fun("x", Binop(Var "x", Add, Int 1))
+let () = printf "%a@." pp_expr func_test
+let func_app_test = App(func_test, Int 5)
+let func_app_eval = eval [] func_app_test
+let () = printf "%a@." pp_expr func_app_test
+let () = printf "%a@." pp_value func_app_eval
 
-(* TEST SUITE, these are the testing functions *)
-let () = printf "%a@." pp_expr test_if
-let () = printf "%a@." pp_value eval_test_if
-let () = printf "%a@." pp_expr test_if_two
-let () = printf "%a@." pp_value eval_test_if_two
-(*let () = printf "Syntax: %a@." pp_expr test_let
-let () = printf "Eval: %a@." pp_value eval_test_let*)
-let () = printf "Syntax: %a@." pp_expr test_add
-let () = printf "Evaluation: %a@." pp_value eval_test_add
-(*let () = printf "Syntax: %a@." pp_expr test_let_two
-let () = printf "Eval: %a@." pp_value eval_test_let_two*)
+let closure_test = Let("a", Int 1, Let("f", Fun("x", Binop(Var("x"), Add, Var("a"))), App(Var("f"), Int 5)))
+let closure_eval_test = eval [] closure_test
+let () = printf "%a@." pp_expr closure_test
+let () = printf "%a@." pp_value closure_eval_test
 
-*)
+let closure_test_two = Let("a", Int 1, Let("f", Fun("x", Binop(Var("x"), Add, Var("a"))), Let("a", Int 100, App(Var("f"), Int 5))))
+let closure_eval_test_two = eval [] closure_test_two
+let () = printf "%a@." pp_expr closure_test_two
+let () = printf "%a@." pp_value closure_eval_test_two
+
+let fact_test = LetRec("fact", Fun("n", If(Binop(Var("n"), Eq, Int 0), Int 1, Binop(Var("n"), Mul, App(Var("fact"), Binop(Var("n"), Sub, Int 1))))), App(Var("fact"), Int 5))
+let () = printf "%a@." pp_expr fact_test
+let fact_test_eval = eval [] fact_test
+let () = printf "%a@." pp_value fact_test_eval

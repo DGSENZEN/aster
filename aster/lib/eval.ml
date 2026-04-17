@@ -1,9 +1,9 @@
 open Ast
 
-let rec lookup name env = 
+let rec lookup (name: string) (env: env) = 
   match env with
   | [] -> failwith "There needs to be an existent variable in the environment!"
-  | (k, v) :: rest -> if k = name then v else lookup name rest
+  | (k, v) :: rest -> if k = name then !v else lookup name rest
 
 let as_int = function
   | VInt i -> i
@@ -13,32 +13,63 @@ let as_bool = function
   | VBool b -> b
   | _ -> failwith "Not a valid boolean value."
 
+let as_float = function 
+  | VFloat f -> f
+  | _ -> failwith "Not a valid floating point value"
 
-let comparison a b bbinop = let i = as_int(a) in let j = as_int(b) in 
+let int_op (a: int) (b: int) abinop = 
+match abinop with 
+| Add -> VInt(a + b)
+| Sub -> VInt(a - b)
+| Mul -> VInt(a * b)
+| Div -> VInt(a / b)
+|  _ -> failwith "Not valid integer operations."
+
+let float_op (a: float) (b: float) fbinop =
+match fbinop with 
+| Add -> VFloat(a +. b)
+| Sub -> VFloat(a -. b)
+| Mul -> VFloat(a *. b)
+| Div -> VFloat(a /. b)
+| _ -> failwith "Not valid floating point operations."
+
+let arithmetic a b binop = match a, b with 
+  | VInt i, VInt j -> int_op i j binop
+  | VFloat i, VFloat j -> float_op i j binop
+  | _ -> failwith "Invalid operation." 
+
+let comparison a b bbinop =
 match bbinop with 
-| Eq -> VBool (i = j)
-| Le -> VBool(i <= j)
-| Lt -> VBool(i < j)
-| Ge -> VBool(i >= j)
-| Gt -> VBool(i > j)
+| Eq -> VBool (a = b)
+| Le -> VBool(a <= b)
+| Lt -> VBool(a < b)
+| Ge -> VBool(a >= b)
+| Gt -> VBool(a > b)
 | _ -> failwith "You need to use comparison operators for this to work."
+
+let strict_comparison a b binop = match a, b with 
+  | VInt i, VInt j -> comparison i j binop
+  | VFloat i, VFloat j -> comparison i j binop
+  | _ -> failwith "Type Error: Comparison is only allowed between NUMERIC values."  
+
 
 let rec eval env = function
   | Int i -> VInt i
+  | Float f -> VFloat f
   | Var s -> lookup s env
   | Binop (l, bop, r) -> let i = eval env l 
   in let j = eval env r in (
     match bop with 
-    | Add -> VInt(as_int(i) + as_int(j))
-    | Sub -> VInt(as_int(i) - as_int(j))
-    | Mul -> VInt(as_int(i) * as_int(j))
-    | Div -> VInt(as_int(i) / as_int(j))
-    | Eq | Le | Lt | Ge | Gt -> comparison i j bop
+    | Add | Sub | Mul | Div -> arithmetic i j bop
+    | Eq | Le | Lt | Ge | Gt -> strict_comparison i j bop
   )
   | Let (var, bind, body) -> 
     let bounded_val = eval env bind in
-    let new_env = (var, bounded_val) :: env in
+    let new_env = (var, ref bounded_val) :: env in
     eval new_env body
+  | LetRec(var, bind, body) -> let dummy = ref (VInt 0) in 
+    let new_env = (var, dummy) :: env in let r_closure = eval new_env bind in
+    dummy := r_closure; eval new_env body
   | Bool b -> VBool b
   | If (init_cond, t_branch, f_branch) -> let eval_cond = eval env init_cond in
     (match eval_cond with
@@ -50,6 +81,6 @@ let rec eval env = function
   | App (fn, arg) -> let eval_fn = eval env fn in 
   let eval_arg = eval env arg in (
     match eval_fn with 
-  | VClosure(param, body, captured_env) -> let new_env = (param, eval_arg) :: captured_env in eval new_env body
+  | VClosure(param, body, captured_env) -> let new_env = (param, ref eval_arg) :: captured_env in eval new_env body
   | _ -> failwith "Not a valid function!"
   )
