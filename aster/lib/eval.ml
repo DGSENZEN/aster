@@ -52,6 +52,25 @@ let strict_comparison a b binop = match a, b with
   | VFloat i, VFloat j -> comparison i j binop
   | _ -> failwith "Type Error: Comparison is only allowed between NUMERIC values."  
 
+let rec match_eval pat v = match pat, v with
+  | PWild, _ -> Some []
+  | PVar pat, v -> Some [(pat, v)]
+  | PInt pat, VInt v -> if pat = v then Some [] else None
+  | PFloat pat, VFloat v -> if pat = v then Some [] else None
+  | PBool pat, VBool v -> if pat = v then Some [] else None
+  | PTuple pat, VTuple v -> tuple_check pat v
+  | _, _ -> None
+
+and tuple_check pats vals = match pats, vals with 
+  | [], [] -> Some []
+  | p :: ps, v :: vs -> (
+    let eval_bind = (match_eval p v) in match eval_bind with 
+    | None -> None
+    | Some bindings -> let r_check = tuple_check ps vs 
+    in match r_check with
+      | None -> None
+      | Some t_bindings -> Some (bindings @ t_bindings))
+  | _ -> None
 
 let rec eval env = function
   | Int i -> VInt i
@@ -84,3 +103,5 @@ let rec eval env = function
   | VClosure(param, body, captured_env) -> let new_env = (param, ref eval_arg) :: captured_env in eval new_env body
   | _ -> failwith "Not a valid function!"
   )
+  | Tuple tp_lst -> VTuple(List.map (eval env) tp_lst)
+  | Match (v_mat, pt_lst) -> failwith "todo"

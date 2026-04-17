@@ -38,3 +38,8 @@ let fact_test = LetRec("fact", Fun("n", If(Binop(Var("n"), Eq, Int 0), Int 1, Bi
 let () = printf "%a@." pp_expr fact_test
 let fact_test_eval = eval [] fact_test
 let () = printf "%a@." pp_value fact_test_eval
+
+let fib_test = LetRec("fib", Fun("n", If(Binop(Var("n"), Lt, Int 2), Var("n"), Binop(App(Var("fib"), Binop(Var("n"), Sub, Int 1)), Add, App(Var("fib"), Binop(Var("n"), Sub, Int 2))))), App(Var("fib"), Int 10))
+let () = printf "%a@." pp_expr fib_test
+let eval_fib_test = eval [] fib_test
+let () = printf "%a@." pp_value eval_fib_test
