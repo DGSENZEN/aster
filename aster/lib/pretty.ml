@@ -18,12 +18,8 @@ let rec pp_expr ppf = function
   | Int i -> fprintf ppf "%d" i
   | Float f -> fprintf ppf "%f" f
   | Var s -> fprintf ppf "%s" s
-  | Arith(l, op, r) -> (
-    match op with
-    | Add | Sub | Mul | Div -> fprintf ppf "@[<hv 1>%a %a %a@]" pp_expr l str_of_binop op pp_expr r)
-  | Comp(l, op, r) -> ( 
-    match op with
-    | Eq | Ge | Le | Gt | Lt -> fprintf ppf "@[<hv 1>%a %a %a@]" pp_expr l str_of_comp op pp_expr r)
+  | Arith(l, op, r) -> fprintf ppf "@[<hv 1>%a %a %a@]" pp_expr l str_of_binop op pp_expr r
+  | Comp(l, op, r) -> fprintf ppf "@[<hv 1>%a %a %a@]" pp_expr l str_of_comp op pp_expr r
   | Let(var, bind, body) -> fprintf ppf "@[<hv 1>let %s = %a in %a@]" var pp_expr bind pp_expr body
   | LetRec(var, bind, body) -> fprintf ppf "@[<hv 1>let rec %s = %a in %a@]" var pp_expr bind pp_expr body
   | Bool b -> fprintf ppf "@[<hv 1>%s @]" (if b then "true" else "false")

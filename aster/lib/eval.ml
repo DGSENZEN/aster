@@ -75,8 +75,10 @@ let rec eval env = function
   | Int i -> VInt i
   | Float f -> VFloat f
   | Var s -> lookup s env
-  | Arith (l, op, r) -> let i = eval env l in let j = eval env r in arithmetic i j op
-  | Comp (l, op, r) -> let i = eval env l in let j = eval env r in strict_comparison i j op
+  | Arith (l, op, r) -> let i = eval env l in 
+    let j = eval env r in arithmetic i j op
+  | Comp (l, op, r) -> let i = eval env l in 
+    let j = eval env r in strict_comparison i j op
   | Let (var, bind, body) -> 
     let bounded_val = eval env bind in
     let new_env = (var, ref bounded_val) :: env in
@@ -93,13 +95,14 @@ let rec eval env = function
       )
   | Fun (param, body) -> VClosure(param, body, env)
   | App (fn, arg) -> let eval_fn = eval env fn in 
-  let eval_arg = eval env arg in (
+    let eval_arg = eval env arg in (
     match eval_fn with 
   | VClosure(param, body, captured_env) -> let new_env = (param, ref eval_arg) :: captured_env in eval new_env body
   | v -> raise_error (AppError (val_to_type v))
   ) (* App case: invalid function application or wrong closure construction *)
   | Tuple tp_lst -> VTuple(List.map (eval env) tp_lst)
-  | Match (v_mat, pt_lst) -> let v_m = eval env v_mat in matcher v_m env pt_lst
+  | Match (v_mat, pt_lst) -> let v_m = eval env v_mat 
+    in matcher v_m env pt_lst
 
 and matcher value env branches = 
   match branches with 
