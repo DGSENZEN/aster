@@ -1,13 +1,6 @@
-type binop = 
-  | Add
-  | Sub
-  | Mul 
-  | Div 
-  | Eq 
-  | Lt 
-  | Gt 
-  | Le 
-  | Ge
+type arith_op = | Add | Sub | Mul | Div 
+
+type comp_op = | Eq | Lt | Gt | Le | Ge
 
 type pattern = 
   | PWild 
@@ -25,7 +18,8 @@ type expr =
   | LetRec of string * expr * expr
   | Bool of bool
   | If of expr * expr * expr
-  | Binop of expr * binop * expr
+  | Arith of expr * arith_op * expr
+  | Comp of expr * comp_op * expr
   | Fun of string * expr
   | App of expr * expr
   | Tuple of expr list
