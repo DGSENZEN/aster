@@ -83,9 +83,10 @@ let rec eval env = function
     let bounded_val = eval env bind in
     let new_env = (var, ref bounded_val) :: env in
     eval new_env body
-  | LetRec(var, bind, body) -> let dummy = ref (VInt 0) in 
-    let new_env = (var, dummy) :: env in let r_closure = eval new_env bind in
-    dummy := r_closure; eval new_env body
+  | LetRec(var, (param, b), body) -> let dummy = ref (VInt 0) 
+    in let new_env = (var, dummy) :: env in
+    let rec_closure = VClosure(param, b, new_env) in 
+    dummy := rec_closure; eval new_env body
   | Bool b -> VBool b
   | If (init_cond, t_branch, f_branch) -> let eval_cond = eval env init_cond in
     (match eval_cond with

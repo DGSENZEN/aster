@@ -34,12 +34,12 @@ let closure_eval_test_two = eval [] closure_test_two
 let () = printf "%a@." pp_expr closure_test_two
 let () = printf "%a@." pp_value closure_eval_test_two
 
-let fact_test = LetRec("fact", Fun("n", If(Comp(Var("n"), Eq, Int 0), Int 1, Arith(Var("n"), Mul, App(Var("fact"), Arith(Var("n"), Sub, Int 1))))), App(Var("fact"), Int 5))
+let fact_test = LetRec("fact", ("fact", Fun("n", If(Comp(Var("n"), Eq, Int 0), Int 1, Arith(Var("n"), Mul, App(Var("fact"), Arith(Var("n"), Sub, Int 1)))))), App(Var("fact"), Int 5))
 let () = printf "%a@." pp_expr fact_test
 let fact_test_eval = eval [] fact_test
 let () = printf "%a@." pp_value fact_test_eval
 
-let fib_test = LetRec("fib", Fun("n", If(Comp(Var("n"), Lt, Int 2), Var("n"), Arith(App(Var("fib"), Arith(Var("n"), Sub, Int 1)), Add, App(Var("fib"), Arith(Var("n"), Sub, Int 2))))), App(Var("fib"), Int 10))
+let fib_test = LetRec("fib", ("fib", Fun("n", If(Comp(Var("n"), Lt, Int 2), Var("n"), Arith(App(Var("fib"), Arith(Var("n"), Sub, Int 1)), Add, App(Var("fib"), Arith(Var("n"), Sub, Int 2)))))), App(Var("fib"), Int 10))
 let () = printf "%a@." pp_expr fib_test
 let eval_fib_test = eval [] fib_test
 let () = printf "%a@." pp_value eval_fib_test

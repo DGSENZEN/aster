@@ -15,7 +15,7 @@ type expr =
   | Float of float
   | Var of string
   | Let of string * expr * expr
-  | LetRec of string * expr * expr
+  | LetRec of string * (string * expr) * expr
   | Bool of bool
   | If of expr * expr * expr
   | Arith of expr * arith_op * expr

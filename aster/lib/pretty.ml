@@ -21,7 +21,7 @@ let rec pp_expr ppf = function
   | Arith(l, op, r) -> fprintf ppf "@[<hv 1>%a %a %a@]" pp_expr l str_of_binop op pp_expr r
   | Comp(l, op, r) -> fprintf ppf "@[<hv 1>%a %a %a@]" pp_expr l str_of_comp op pp_expr r
   | Let(var, bind, body) -> fprintf ppf "@[<hv 1>let %s = %a in %a@]" var pp_expr bind pp_expr body
-  | LetRec(var, bind, body) -> fprintf ppf "@[<hv 1>let rec %s = %a in %a@]" var pp_expr bind pp_expr body
+  | LetRec(var, (f_name, bind), body) -> fprintf ppf "@[<hv 1>let rec %s = %a in %a@]" var pp_expr bind pp_expr body
   | Bool b -> fprintf ppf "@[<hv 1>%s @]" (if b then "true" else "false")
   | If(init_cond, t_branch, f_branch) -> fprintf ppf "@[<hv 1>if %a then %a else %a@]" pp_expr init_cond pp_expr t_branch pp_expr f_branch
   | Fun(param, body) -> fprintf ppf "@[<hv 1>fn %s -> (%a)@]" param pp_expr body
