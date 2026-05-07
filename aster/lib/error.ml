@@ -1,44 +1,76 @@
-open Ast 
+open Ast
 
-type t = 
-| TInt 
-| TFloat
-| TBool
-| TClosure
-| TTuple
+type runtime_type =
+  | TUnit
+  | TInt
+  | TFloat
+  | TBool
+  | TString
+  | TTuple
+  | TFunction
 
 type error =
-| VarError of string
-| TypeError of t * t
-| DivByZeroError
-| MatchError of t 
-| AppError of t 
+  | Unbound_variable of string
+  | Type_error of { expected : string; actual : runtime_type }
+  | Binary_type_error of { op : string; left : runtime_type; right : runtime_type }
+  | Division_by_zero
+  | Match_failure of runtime_type
+  | Not_a_function of runtime_type
+  | Duplicate_binding of string
 
+exception Eval_error of error
 
-let val_to_type = function 
-| VInt _ -> TInt
-| VFloat _ -> TFloat
-| VBool _ -> TBool
-| VClosure _ -> TClosure
-| VTuple _ -> TTuple 
+let type_of_value = function
+  | VUnit -> TUnit
+  | VInt _ -> TInt
+  | VFloat _ -> TFloat
+  | VBool _ -> TBool
+  | VString _ -> TString
+  | VTuple _ -> TTuple
+  | VClosure _ -> TFunction
 
-
-let type_to_string = function
-| TInt -> "integer"
-| TFloat -> "float"
-| TBool -> "boolean"
-| TClosure -> "<fun>"
-| TTuple -> "tuple"
+let runtime_type_to_string = function
+  | TUnit -> "unit"
+  | TInt -> "int"
+  | TFloat -> "float"
+  | TBool -> "bool"
+  | TString -> "string"
+  | TTuple -> "tuple"
+  | TFunction -> "function"
 
 let error_to_string = function
-| VarError x -> Printf.sprintf "Unbound variable error: %s" x
-| TypeError (a, b) -> let a_string = type_to_string a in 
-  let b_string = type_to_string b in 
-  Printf.sprintf "Type Error: expected %s but got a %s"  a_string b_string
-| DivByZeroError -> "Division by zero!"
-| MatchError a -> let match_e = type_to_string a in Printf.sprintf "Match Error: No pattern matched of type %s" match_e
-| AppError a -> let app_e = type_to_string a in Printf.sprintf "Application error: tried to call a value of type %s" app_e 
+  | Unbound_variable name ->
+      Printf.sprintf "Unbound variable: %s" name
 
-exception Eval_Error of error
-let raise_error err = raise (Eval_Error err)
+  | Type_error { expected; actual } ->
+      Printf.sprintf
+        "Type error: expected %s, got %s"
+        expected
+        (runtime_type_to_string actual)
 
+  | Binary_type_error { op; left; right } ->
+      Printf.sprintf
+        "Type error: operator %s cannot be applied to %s and %s"
+        op
+        (runtime_type_to_string left)
+        (runtime_type_to_string right)
+
+  | Division_by_zero ->
+      "Division by zero"
+
+  | Match_failure typ ->
+      Printf.sprintf
+        "Match failure: no pattern matched value of type %s"
+        (runtime_type_to_string typ)
+
+  | Not_a_function typ ->
+      Printf.sprintf
+        "Application error: tried to call a %s"
+        (runtime_type_to_string typ)
+
+  | Duplicate_binding name ->
+      Printf.sprintf
+        "Duplicate variable in pattern: %s"
+        name
+
+let raise_error err = raise (Eval_error err)

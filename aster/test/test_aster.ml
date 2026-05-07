@@ -1,83 +1,181 @@
-open Aster.Pretty
-open Aster.Eval
-open Aster.Ast
-open Format
+open Aster
 
-let new_eval_test = Arith(Int 6, Add, Int 7)
-let () = printf "%a@." pp_expr new_eval_test
-let new_eval_value_test = eval [] new_eval_test
-let () = printf "%a@." pp_value new_eval_value_test
+let fail_test name message =
+  Printf.eprintf "FAIL %s: %s\n" name message;
+  exit 1
 
+let check_value name expr expected =
+  try
+    let actual = Eval.eval Eval.empty_env expr in
+    if actual = expected then
+      Printf.printf "ok   %s\n" name
+    else
+      fail_test name
+        (Printf.sprintf
+           "expected %s, got %s"
+           (Pretty.value_to_string expected)
+           (Pretty.value_to_string actual))
+  with
+  | Error.Eval_error err ->
+      fail_test name (Error.error_to_string err)
 
-let float_eval_test = Arith(Float 6.0, Add, Float 7.1)
-let () = printf "%a@." pp_expr float_eval_test
-let float_eval_val_test = eval [] float_eval_test
-let () = printf "%a@." pp_value float_eval_val_test
+let check_error name expr =
+  try
+    let actual = Eval.eval Eval.empty_env expr in
+    fail_test name
+      (Printf.sprintf "expected error, got %s" (Pretty.value_to_string actual))
+  with
+  | Error.Eval_error _ ->
+      Printf.printf "ok   %s\n" name
 
-(* function testing 
-(fun x -> x + 1) 5 *)
+let () =
+  let open Ast in
+  check_value
+    "arithmetic precedence via AST"
+    (add (int 1) (mul (int 2) (int 3)))
+    (VInt 7);
 
-let func_test = Fun("x", Arith(Var "x", Add, Int 1))
-let () = printf "%a@." pp_expr func_test
-let func_app_test = App(func_test, Int 5)
-let func_app_eval = eval [] func_app_test
-let () = printf "%a@." pp_expr func_app_test
-let () = printf "%a@." pp_value func_app_eval
+  check_value
+    "let name"
+    (let_name "x" (int 41) (add (var "x") (int 1)))
+    (VInt 42);
 
-let closure_test = Let("a", Int 1, Let("f", Fun("x", Arith(Var("x"), Add, Var("a"))), App(Var("f"), Int 5)))
-let closure_eval_test = eval [] closure_test
-let () = printf "%a@." pp_expr closure_test
-let () = printf "%a@." pp_value closure_eval_test
+  check_value
+    "tuple pattern let"
+    (let_
+       (PTuple [PVar "x"; PVar "y"])
+       (tuple [int 20; int 22])
+       (add (var "x") (var "y")))
+    (VInt 42);
 
-let closure_test_two = Let("a", Int 1, Let("f", Fun("x", Arith(Var("x"), Add, Var("a"))), Let("a", Int 100, App(Var("f"), Int 5))))
-let closure_eval_test_two = eval [] closure_test_two
-let () = printf "%a@." pp_expr closure_test_two
-let () = printf "%a@." pp_value closure_eval_test_two
+  check_value
+    "function application"
+    (app (fun_ "x" (add (var "x") (int 1))) (int 41))
+    (VInt 42);
 
-let fact_test = LetRec("fact", ("fact", Fun("n", If(Comp(Var("n"), Eq, Int 0), Int 1, Arith(Var("n"), Mul, App(Var("fact"), Arith(Var("n"), Sub, Int 1)))))), App(Var("fact"), Int 5))
-let () = printf "%a@." pp_expr fact_test
-let fact_test_eval = eval [] fact_test
-let () = printf "%a@." pp_value fact_test_eval
+  check_value
+    "unit literal"
+    unit
+    (VUnit);
 
-let fib_test = LetRec("fib", ("fib", Fun("n", If(Comp(Var("n"), Lt, Int 2), Var("n"), Arith(App(Var("fib"), Arith(Var("n"), Sub, Int 1)), Add, App(Var("fib"), Arith(Var("n"), Sub, Int 2)))))), App(Var("fib"), Int 10))
-let () = printf "%a@." pp_expr fib_test
-let eval_fib_test = eval [] fib_test
-let () = printf "%a@." pp_value eval_fib_test
+  check_value
+    "unit pattern let"
+    (let_ PUnit unit (int 42))
+    (VInt 42);
 
-(* match 5 with x -> x + 1 *)
-let match_test1 = Match(Int 5, [(PVar "x", Arith(Var "x", Add, Int 1))])
-let () = printf "%a@." pp_expr match_test1
-let eval_match_test1 = eval [] match_test1
-let () = printf "%a@." pp_value eval_match_test1
-(* should give VInt 6 *)
+  check_value
+    "unit pattern match"
+    (match_ unit [(PUnit, int 42)])
+    (VInt 42);
 
-(* match 2 with | 1 -> 10 | 2 -> 20 | _ -> 0 *)
-let match_test2 = Match(Int 2, [
-  (PInt 1, Int 10);
-  (PInt 2, Int 20);
-  (PWild, Int 0)
-])
+  check_value
+    "string literal"
+    (string "hello")
+    (VString "hello");
 
-let () = printf "%a@." pp_expr match_test2
+  check_value
+    "string pattern match"
+    (match_
+       (string "hi")
+       [(PString "hi", string "bye")])
+    (VString "bye");
 
-let eval_match_test2 = eval [] match_test2
-let () = printf "%a@." pp_value eval_match_test2
+  check_value
+    "string equality"
+    (eq (string "same") (string "same"))
+    (VBool true);
 
-(* should give VInt 20 *)
+  check_value
+    "multi-arm match skips failed arms"
+    (match_
+       (int 2)
+       [
+         (PInt 1, int 10);
+         (PInt 2, int 20);
+         (PWild, int 0);
+       ])
+    (VInt 20);
 
-(* match (3, 4) with (x, y) -> x + y *)
-let match_test3 = Match(Tuple [Int 3; Int 4], [(PTuple [PVar "x"; PVar "y"], Arith(Var "x", Add, Var "y"))])
-(* should give VInt 7 *)
-let () = printf "%a@." pp_expr match_test3
+  check_value
+    "tuple projection with wildcards"
+    (match_
+       (tuple [int 1; int 2; int 3])
+       [(PTuple [PWild; PVar "y"; PWild], var "y")])
+    (VInt 2);
 
-let eval_match_test3 = eval [] match_test3
+  check_value
+    "closure captures lexical environment"
+    (let_name
+       "a"
+       (int 1)
+       (let_name
+          "f"
+          (fun_ "x" (add (var "x") (var "a")))
+          (app (var "f") (int 5))))
+    (VInt 6);
 
-let () = printf "%a@." pp_value eval_match_test3
-(* match (1, 2, 3) with (_, y, _) -> y *)
-let match_test4 = Match(Tuple [Int 1; Int 2; Int 3], [(PTuple [PWild; PVar "y"; PWild], Var "y")])
+  check_value
+    "closure ignores later shadowing"
+    (let_name
+       "a"
+       (int 1)
+       (let_name
+          "f"
+          (fun_ "x" (add (var "x") (var "a")))
+          (let_name "a" (int 100) (app (var "f") (int 5)))))
+    (VInt 6);
 
-let () = printf "%a@." pp_expr match_test4
+  let fact_body =
+    if_
+      (eq (var "n") (int 0))
+      (int 1)
+      (mul
+         (var "n")
+         (app (var "fact") (sub (var "n") (int 1))))
+  in
+  check_value
+    "let rec factorial"
+    (let_rec "fact" "n" fact_body (app (var "fact") (int 5)))
+    (VInt 120);
 
-let eval_match_test_4 = eval [] match_test4
-let () = printf "%a@." pp_value eval_match_test_4
-(* should give VInt 2 *)
+  check_value
+    "match tuple"
+    (match_
+       (tuple [int 1; bool true])
+       [
+         (PTuple [PInt 0; PWild], int 0);
+         (PTuple [PVar "x"; PBool true], add (var "x") (int 41));
+       ])
+    (VInt 42);
+
+  check_error
+    "division by zero"
+    (div (int 1) (int 0));
+
+  check_error
+    "bad application"
+    (app (int 1) (int 2));
+
+  check_error
+    "closure equality regression"
+    (eq (fun_ "x" (var "x")) (fun_ "x" (var "x")));
+
+  check_error
+    "closure equality asymmetry regression"
+    (eq (fun_ "x" (var "x")) (int 1));
+
+  check_error
+    "tuple closure equality regression"
+    (eq
+       (tuple [fun_ "x" (var "x")])
+       (tuple [fun_ "x" (var "x")]));
+
+  check_error
+    "duplicate bindings"
+    (let_
+       (PTuple [PVar "x"; PVar "x"])
+       (tuple [int 1; int 2])
+       (var "x"));
+
+  Printf.printf "\nAll tests passed.\n";
+  Printf.printf "Brooooo...."

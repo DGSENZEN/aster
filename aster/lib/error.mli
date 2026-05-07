@@ -1,22 +1,26 @@
 open Ast
 
-type t = 
-| TInt 
-| TFloat
-| TBool
-| TClosure
-| TTuple
+type runtime_type =
+  | TUnit
+  | TInt
+  | TFloat
+  | TBool
+  | TString
+  | TTuple
+  | TFunction
 
 type error =
-| VarError of string
-| TypeError of t * t
-| DivByZeroError
-| MatchError of t 
-| AppError of t 
+  | Unbound_variable of string
+  | Type_error of { expected : string; actual : runtime_type }
+  | Binary_type_error of { op : string; left : runtime_type; right : runtime_type }
+  | Division_by_zero
+  | Match_failure of runtime_type
+  | Not_a_function of runtime_type
+  | Duplicate_binding of string
 
-exception Eval_Error of error
+exception Eval_error of error
 
-val val_to_type: value -> t
-val type_to_string: t -> string
-val error_to_string: error -> string
-val raise_error: error -> 'a
+val type_of_value : value -> runtime_type
+val runtime_type_to_string : runtime_type -> string
+val error_to_string : error -> string
+val raise_error : error -> 'a
